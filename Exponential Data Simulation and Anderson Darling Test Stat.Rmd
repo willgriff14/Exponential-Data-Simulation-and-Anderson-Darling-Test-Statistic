@@ -1,0 +1,178 @@
+---
+title: "Statistics Assignment - Will Griffin"
+output: pdf_document
+---
+
+Q1.
+
+$H_{0}:The~quakes ~dataset~can~be~modelled~with~an~exponential~distrubution.$
+
+$H_{1}: There~is~no~parameter~such~that~the~quakes~dataset~can~be~modelled~as~an~exponential~distribution$
+
+Q2.
+
+The Anderson-Darling test may be more useful to answer the question than a QQ or probability plot as it incorporates the variance, mean squared error and probability density function into its calculation. Anderson-Darling test provides a statisical representation of how well the data fits, allowing for more objective and measured data-analysis than graphical representations. The closer the test is to zero, the better the fit of data with our test distribution.
+
+$F_{X}(y;\theta)(1-F_{X}(y;\theta)) ~~ represents~variance$
+
+
+$f_{X}(y;\theta) ~~ represents~probability~density~function$
+
+
+$(\hat{F}_{n}(y;\theta)-F_{X}(y;\theta))^{2} ~~ represents~mean~squared~error$
+
+
+Q3.
+
+$$H_{1}:~u_{0}\ne~u_{1}~\Rightarrow~P-value=P(|T|\ge|t_{obs}|~:~H_{0}~true)$$
+
+$$F_{X}=1-e^{-\theta x}, ~~~~if~~ x > 0$$
+$$F_{X}=0, ~~~~ if~~ x \le 0$$
+
+Q4.
+
+```{r}
+load(url("https://people.maths.bris.ac.uk/~maxca/stats1/stats1.RData"))
+
+compute.ad.test <- function(xs)
+{
+vec1 <- c(unlist(xs))
+xs <- sort(vec1)
+n <- length(xs)
+theta.mle <- 1/mean(xs)
+logp1 <- pexp(xs, rate = theta.mle, log.p = TRUE)
+logp2 <- log(1 - (pexp(xs, rate = theta.mle)))
+j <- (2 * seq(1:n) - 1) * (logp1 + rev(logp2))
+t <- -n - mean(j)
+return(t)
+}
+
+compute.ad.test(quakes)
+```
+
+Q5.
+
+$1.~Compute~\hat{\theta}_{mle}~from~quakes~dataset.$
+
+
+$2.~Simulate~10,000~exponentially~distributed~data~points~using~\hat{\theta}_{mle}~rate~paramter.$
+
+
+$3.~Calculate~the~Anderson-Darling~statistic~(T-value)~for~these~simulated~data~points.$
+
+
+$4.~Repeat~this~process~10,000~times.$
+
+
+$5.~Compare~the~set~of~T-values~to~t_{obs}.$
+
+
+$6.~For~H_{1}:~P-value=P(|T|\ge|t_{obs}|~:~H_{0}~true)$
+
+
+
+Q6.
+
+```{r}
+simulated.ad.tests <- function(xs)
+{
+      simulated.data <- function(xs)
+      {
+          compute.theta.mle <- function(xs)
+          {
+          vec1 <- c(unlist(xs))
+          xs <- sort(vec1)
+          n <- length(xs)
+          theta.mle <- 1/mean(xs)
+          return(theta.mle)
+          }
+      theta.mle <- compute.theta.mle(xs)
+      xvalues <- rexp(10000, rate = theta.mle)
+      Z <- sort(xvalues)
+      n <- length(Z)
+      logp1 <- pexp(Z, rate = theta.mle, log.p = TRUE)
+      logp2 <- log(1 - (pexp(Z, rate = theta.mle)))
+      j <- (2 * seq(1:n) - 1) * (logp1 + rev(logp2))
+      t <- -n - mean(j)
+      return(t)
+      }
+  T.simulations <- numeric(10000)
+  X <- simulated.data(xs)
+  i <- c(1:10000)
+  for(X in i){
+  T.simulations[X] <- simulated.data(xs)
+  }
+R <- sort(T.simulations)
+}
+R <- simulated.ad.tests(quakes)
+u <- 1/mean(R)
+x <- compute.ad.test(quakes)
+e <- exp(1)
+f <- function(x) (u*e^(-u*x))
+Pvalue <- integrate(f, lower = 0, upper = x)
+
+Pvalue
+```
+
+$P-value > 0.10,~therefore~no~evidence~to~reject~the~null~hypthosis.$
+
+```{r}
+hist(R, main = "Simulated Test Data", xlab = "Anderson-Darling Statistic",)
+abline(v = x, col = "red")
+```
+
+
+Q7.
+
+```{r}
+type.1.error.probability <- function(xs, c)
+{
+        simulated.ad.tests <- function(xs)
+        {
+                simulated.data <- function(xs)
+                {
+                    compute.theta.mle <- function(xs)
+                    {
+                    vec1 <- c(unlist(xs))
+                    xs <- sort(vec1)
+                    n <- length(xs)
+                    theta.mle <- 1/mean(xs)
+                    return(theta.mle)
+                    }
+                theta.mle <- compute.theta.mle(xs)
+                xvalues <- rexp(10000, rate = theta.mle)
+                Z <- sort(xvalues)
+                n <- length(Z)
+                logp1 <- pexp(Z, rate = theta.mle, log.p = TRUE)
+                logp2 <- log(1 - (pexp(Z, rate = theta.mle)))
+                j <- (2 * seq(1:n) - 1) * (logp1 + rev(logp2))
+                t <- -n - mean(j)
+                return(t)
+                }
+        T.simulations <- numeric(10000)
+        X <- simulated.data(xs)
+        i <- c(1:10000)
+        for(X in i){
+        T.simulations[X] <- simulated.data(xs)
+        }
+        R <- sort(T.simulations)
+        }
+Q <- simulated.ad.tests(xs)
+e <- exp(1)
+u <- 1/mean(Q)
+P <- 1-e^(-u*c)
+er <- "Type I error probability:"
+at <- " - at critical value:"
+V <- paste(er, P, at, c)
+return(V)
+}
+
+
+type.1.error.probability(quakes, 0.1621)
+
+type.1.error.probability(quakes, 0.1049)
+
+type.1.error.probability(quakes, 0.0512)
+
+```
+
